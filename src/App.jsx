@@ -4,7 +4,7 @@ import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set, get, child } from "firebase/database";
 import CryptoJS from 'crypto-js';
 
-// --- FIREBASE CONFIG (Replace with your own) ---
+// --- FIREBASE CONFIG ---
 const firebaseConfig = {
   apiKey: "AIzaSyAKC5znAlxRW77hXi1Pk0JvAy7vAXurU9w",
   authDomain: "tournament-pro-7640a.firebaseapp.com",
@@ -18,7 +18,32 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// --- APP COMPONENT ---
+// --- STYLES ---
+const styles = {
+  container: { maxWidth: '500px', margin: '0 auto', padding: '20px', minHeight: '100vh' },
+  card: {
+    background: 'rgba(255, 255, 255, 0.05)',
+    backdropFilter: 'blur(10px)',
+    borderRadius: '16px',
+    padding: '24px',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+  },
+  input: {
+    width: '100%', padding: '12px', background: '#1a1a1a', border: '1px solid #333',
+    borderRadius: '8px', color: '#fff', marginBottom: '15px', fontSize: '16px', boxSizing: 'border-box'
+  },
+  button: {
+    width: '100%', padding: '14px', background: '#fff', color: '#000',
+    border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', transition: '0.3s'
+  },
+  pwaBtn: {
+    width: '100%', padding: '12px', background: 'linear-gradient(45deg, #0070f3, #00a4ff)',
+    color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', marginBottom: '20px'
+  },
+  text: { fontSize: '14px', color: '#888', marginBottom: '8px' }
+};
+
 function App() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
@@ -42,11 +67,9 @@ function App() {
 
   return (
     <Router>
-      <div style={{ maxWidth: '500px', margin: 'auto', padding: '20px' }}>
+      <div style={styles.container}>
         {showInstall && (
-          <button onClick={installApp} style={{ width: '100%', padding: '15px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', marginBottom: '20px' }}>
-            GET APP
-          </button>
+          <button onClick={installApp} style={styles.pwaBtn}>INSTALL APP</button>
         )}
         <Routes>
           <Route path="/" element={<Home />} />
@@ -57,7 +80,6 @@ function App() {
   );
 }
 
-// --- HOME SCREEN (CREATE MESSAGE) ---
 const Home = () => {
   const [text, setText] = useState('');
   const [pass, setPass] = useState('');
@@ -66,7 +88,7 @@ const Home = () => {
   const navigate = useNavigate();
 
   const handleCreate = async () => {
-    if (!text) return alert("Enter message");
+    if (!text) return;
     const id = Math.random().toString(36).substring(2, 10);
     let content = text;
     if (pass) content = CryptoJS.AES.encrypt(text, pass).toString();
@@ -83,23 +105,33 @@ const Home = () => {
   };
 
   return (
-    <div>
-      <h2>Create Message</h2>
-      <textarea placeholder="Write text..." value={text} onChange={(e)=>setText(e.target.value)} style={{width:'100%', height:'150px'}} />
-      <input type="password" placeholder="Password (Optional)" value={pass} onChange={(e)=>setPass(e.target.value)} style={{width:'100%', margin:'10px 0'}} />
-      <button onClick={handleCreate} style={{width:'100%', padding:'10px'}}>Generate Link</button>
+    <div style={styles.card}>
+      <h2 style={{marginTop: 0, fontWeight: 600}}>SECURE SHARE</h2>
+      <p style={styles.text}>MESSAGE</p>
+      <textarea placeholder="Type your text..." value={text} onChange={(e)=>setText(e.target.value)} 
+        style={{...styles.input, height: '120px', resize: 'none'}} />
       
-      {link && <p style={{background:'#eee', padding:'10px', wordBreak:'break-all'}}>Link: {link}</p>}
+      <p style={styles.text}>PASSWORD (OPTIONAL)</p>
+      <input type="password" placeholder="Min 6 characters" value={pass} onChange={(e)=>setPass(e.target.value)} style={styles.input} />
+      
+      <button onClick={handleCreate} style={styles.button}>CREATE SECURE LINK</button>
+      
+      {link && (
+        <div style={{marginTop: '20px', padding: '10px', background: '#000', borderRadius: '8px', wordBreak: 'break-all'}}>
+          <p style={{...styles.text, color: '#0070f3'}}>SHARE LINK:</p>
+          <code style={{fontSize: '13px'}}>{link}</code>
+        </div>
+      )}
 
-      <hr style={{margin:'30px 0'}} />
-      <h3>Paste Link to View</h3>
-      <input type="text" placeholder="Paste link here..." value={pasteLink} onChange={(e)=>setPasteLink(e.target.value)} style={{width:'100%'}} />
-      <button onClick={handleOpenLink} style={{width:'100%', marginTop:'10px'}}>Open Message</button>
+      <div style={{height: '1px', background: '#333', margin: '30px 0'}}></div>
+
+      <p style={styles.text}>ALREADY HAVE A LINK?</p>
+      <input type="text" placeholder="Paste link here..." value={pasteLink} onChange={(e)=>setPasteLink(e.target.value)} style={styles.input} />
+      <button onClick={handleOpenLink} style={{...styles.button, background: 'transparent', border: '1px solid #333', color: '#fff'}}>OPEN MESSAGE</button>
     </div>
   );
 };
 
-// --- VIEW SCREEN (READ MESSAGE) ---
 const View = () => {
   const { id } = useParams();
   const [msg, setMsg] = useState(null);
@@ -120,23 +152,26 @@ const View = () => {
       const bytes = CryptoJS.AES.decrypt(msg.content, inputPass);
       const dec = bytes.toString(CryptoJS.enc.Utf8);
       if (dec) setResult(dec); else alert("Wrong Password");
-    } catch (e) { alert("Error"); }
+    } catch (e) { alert("Error decrypting"); }
   };
 
-  if (!msg) return <p>Loading...</p>;
+  if (!msg) return <div style={styles.card}>Loading secure data...</div>;
 
   return (
-    <div>
-      <h2>Shared Message</h2>
+    <div style={styles.card}>
+      <h2 style={{marginTop: 0}}>READ MESSAGE</h2>
       {msg.crypt && !result ? (
         <div>
-          <input type="password" placeholder="Enter Password" value={inputPass} onChange={(e)=>setInputPass(e.target.value)} />
-          <button onClick={decrypt}>Unlock</button>
+          <p style={styles.text}>THIS MESSAGE IS ENCRYPTED</p>
+          <input type="password" placeholder="Enter Password" value={inputPass} onChange={(e)=>setInputPass(e.target.value)} style={styles.input} />
+          <button onClick={decrypt} style={styles.button}>DECRYPT</button>
         </div>
       ) : (
-        <div style={{background:'#f0f0f0', padding:'15px', whiteSpace:'pre-wrap'}}>{result}</div>
+        <div style={{background: '#111', padding: '20px', borderRadius: '8px', whiteSpace: 'pre-wrap', border: '1px solid #222'}}>
+          {result}
+        </div>
       )}
-      <button onClick={()=>window.location.href='/'} style={{marginTop:'20px'}}>Create New</button>
+      <button onClick={()=>window.location.href='/'} style={{...styles.button, marginTop: '20px', background: '#222', color: '#fff'}}>BACK HOME</button>
     </div>
   );
 };
